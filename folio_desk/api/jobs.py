@@ -81,6 +81,12 @@ def job_equity(ticker: str, peers: list[str] | None):
     return "equity", ticker.upper(), rep
 
 
+def job_decisions():
+    from ..decision.run import run
+    doc = run()
+    return "decisions", doc["asOf"], doc
+
+
 # ---------------------------------------------------------------- schedule
 
 _scheduler = None
@@ -98,5 +104,6 @@ def start_scheduler():
     _scheduler.add_job(lambda: submit("signals", job_signals, "scheduled"), CronTrigger(day_of_week="mon-fri", hour=h, minute=m))
     _scheduler.add_job(lambda: submit("rotation", job_rotation, "scheduled"), CronTrigger(day_of_week="mon-fri", hour=h, minute=(m + 10) % 60))
     _scheduler.add_job(lambda: submit("drawdowns", job_drawdowns, "scheduled"), CronTrigger(day_of_week="mon-fri", hour=h, minute=(m + 20) % 60))
+    _scheduler.add_job(lambda: submit("decisions", job_decisions, "scheduled"), CronTrigger(day_of_week="mon-fri", hour=h, minute=(m + 40) % 60))
     _scheduler.start()
     log.info("scheduler started (%s)", s.timezone)

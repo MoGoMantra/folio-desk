@@ -15,7 +15,7 @@ def main(argv: list[str] | None = None) -> int:
     sv.add_argument("--host", default="127.0.0.1")
     sv.add_argument("--port", type=int, default=8765)
     rn = sub.add_parser("run", help="run one job now and store the result")
-    rn.add_argument("job", choices=["signals", "rotation", "drawdowns", "equity"])
+    rn.add_argument("job", choices=["signals", "rotation", "drawdowns", "equity", "decisions"])
     rn.add_argument("ticker", nargs="?")
     rn.add_argument("--peers", default="", help="comma-separated peer tickers for an equity run")
     rn.add_argument("--print", action="store_true", help="print the JSON result")
@@ -53,7 +53,8 @@ def main(argv: list[str] | None = None) -> int:
         peers = [p.strip().upper() for p in a.peers.split(",") if p.strip()] or None
         coll, did, doc = jobs.job_equity(a.ticker, peers)
     else:
-        coll, did, doc = {"signals": jobs.job_signals, "rotation": jobs.job_rotation, "drawdowns": jobs.job_drawdowns}[a.job]()
+        coll, did, doc = {"signals": jobs.job_signals, "rotation": jobs.job_rotation, "drawdowns": jobs.job_drawdowns,
+                          "decisions": jobs.job_decisions}[a.job]()
     db.put_doc(coll, did, doc)
     print(f"stored {coll}/{did}")
     if a.print:

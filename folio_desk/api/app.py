@@ -114,6 +114,21 @@ def signals_manual(body: ManualItems):
     return d
 
 
+# ---------------------------------------------------------------- decisions
+
+@app.get("/api/decisions/latest")
+def decisions_latest():
+    d = db.latest_doc("decisions")
+    if not d:
+        raise HTTPException(404, "no decision run yet: POST /api/decisions/run")
+    return d
+
+
+@app.post("/api/decisions/run")
+def decisions_run():
+    return jobs.submit("decisions", jobs.job_decisions, "manual")
+
+
 # ---------------------------------------------------------------- sectors
 
 @app.get("/api/sectors/rotation/latest")
@@ -176,6 +191,46 @@ def equity_run(ticker: str, body: EquityRun):
     if body.peers is not None:
         db.put_doc("peers", t, {"peers": [p.upper() for p in body.peers]})
     return jobs.submit("equity", lambda: jobs.job_equity(t, peers), t)
+
+
+class Review(BaseModel):
+    model: dict
+    overrides: list[dict] = Field(..., description='[{"lever": "Exit P/E", "why": "..."}], one per changed lever')
+    forces: dict | None = None
+    triggers: dict | None = None
+    thesis: list[str] | None = None
+
+
+@app.post("/api/equity/{ticker}/review")
+def equity_review(ticker: str, body: Review):
+    """Save a reviewed model. Every override needs a reason; the same guard rails apply as in auto mode."""
+    t = ticker.upper()
+    rep = db.get_doc("equity", t)
+    if not rep:
+        raise HTTPException(404, f"run {t} first")
+    if not body.overrides or any(not str(o.get("why", "")).strip() for o in body.overrides):
+        raise HTTPException(422, "each override needs a lever and a reason ('why')")
+    m = body.model | {"overrides": body.overrides, "rules": rep["model"].get("rules", [])}
+    collect_like = {"ownPE": rep.get("ownPE"), "peerSet": rep["model"].get("peers")}
+    problems = engine.validate({"ticker": t, "asOf": rep["asOf"], "price": rep["price"], "model": m}, "auto", collect=collect_like)
+    if problems:
+        raise HTTPException(422, {"problems": problems})
+    sig = engine.signal(m, rep["price"])
+    new = rep | {"mode": "reviewed", "model": m, "signal": sig, "reviewedAt": jobs._now(),
+                 "headline": f"{sig['label']}: fair value ${sig['fv']:.2f} vs ${rep['price']:.2f} (reviewed: {len(body.overrides)} override(s))."}
+    if body.triggers is not None:
+        new["triggers"] = body.triggers
+    if body.thesis is not None:
+        new["thesis"] = body.thesis
+    if body.forces is not None:
+        from ..equity import forces as forces_mod
+        new["forces"] = body.forces
+        calc, fprobs = forces_mod.size(new)
+        if fprobs:
+            raise HTTPException(422, {"problems": fprobs})
+        new["forcesCalc"] = calc
+    db.put_doc("equity", t, new)
+    return {"signal": sig, "mode": "reviewed"}
 
 
 @app.post("/api/equity/recompute")

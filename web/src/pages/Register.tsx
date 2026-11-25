@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { api, post } from "../lib/api";
 import { num, usd, usdK } from "../lib/format";
 import { Button, Card, Chip, Empty, Kpi, KpiGrid, Note, Table, type Tone } from "../components/ui";
@@ -22,7 +23,12 @@ export default function Register() {
   const trades = useQuery({ queryKey: ["trades"], queryFn: () => api<Trade[]>("/api/register/trades") });
   const flows = useQuery({ queryKey: ["cashflows"], queryFn: () => api<{ id: string; date: string; account: string; amount: number; note: string }[]>("/api/register/cashflows") });
   const refresh = () => ["positions", "trades", "cashflows"].forEach((k) => qc.invalidateQueries({ queryKey: [k] }));
-  const [f, setF] = useState(blank);
+  const [params] = useSearchParams();
+  const [f, setF] = useState(() => {  // prefilled from a Decisions link
+    const pre = { ...blank } as Record<string, string>;
+    params.forEach((v, k) => { if (k in pre && v) pre[k] = v; });
+    return pre as typeof blank;
+  });
   const [chk, setChk] = useState<CheckResult | null>(null);
   const [confirmBlock, setConfirmBlock] = useState(false);
   const [cf, setCf] = useState({ date: today(), account: "T", amount: "", note: "" });

@@ -25,3 +25,4 @@ folio_desk/static/
 .DS_Store
 .idea/
 .vscode/
+*.tsbuildinfo

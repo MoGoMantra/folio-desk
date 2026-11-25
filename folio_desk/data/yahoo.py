@@ -106,3 +106,28 @@ def _num(x):
         return None if v != v else v
     except (TypeError, ValueError):
         return None
+
+
+def option_mids(ticker: str, wanted: list[tuple[str, str, float]]) -> dict[tuple[str, str, float], float]:
+    """Mid quotes for specific contracts: wanted = [(expiry, "put"|"call", strike)]. Missing ones are omitted."""
+    import yfinance as yf
+
+    t = yf.Ticker(ysym(ticker))
+    out: dict[tuple[str, str, float], float] = {}
+    for exp in sorted({w[0] for w in wanted}):
+        try:
+            ch = t.option_chain(exp)
+        except Exception as ex:
+            log.warning("option chain %s %s: %s", ticker, exp, ex)
+            continue
+        for e, kind, k in [w for w in wanted if w[0] == exp]:
+            tbl = ch.puts if kind == "put" else ch.calls
+            row = tbl[abs(tbl["strike"] - k) < 1e-6]
+            if row.empty:
+                continue
+            bid, ask, last = _num(row.iloc[0].get("bid")), _num(row.iloc[0].get("ask")), _num(row.iloc[0].get("lastPrice"))
+            mid = (bid + ask) / 2 if bid is not None and ask and ask > 0 else last
+            if mid is not None:
+                out[(e, kind, k)] = mid
+    return out
+

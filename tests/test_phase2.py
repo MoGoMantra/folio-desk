@@ -183,6 +183,7 @@ def client(mem_db, monkeypatch):
     def fake_closes(tickers, years=22):
         return pd.DataFrame({t: np.linspace(90, 110, len(idx)) for t in tickers}, index=idx)
     monkeypatch.setattr("folio_desk.api.prices.closes", fake_closes)
+    monkeypatch.setattr("folio_desk.api.phase2.option_quotes", lambda lots: {})  # keep tests offline
     with TestClient(app) as c:
         yield c
 

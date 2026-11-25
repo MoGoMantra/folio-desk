@@ -13,12 +13,13 @@ portfolio analysis, with a web interface on top.
 
 | Desk | What you get | Status |
 |---|---|---|
+| **Decisions** (home page) | One call per name (BUY / ADD / HOLD / TRIM / SELL / AVOID / NO VIEW) with confidence, reasons, suggested size, a cash-secured-put idea and the risk-check verdict; "log this trade" pre-fills the register | Done; as reliable as the equity levels underneath |
 | **Market signals** | ~20 signals in six layers (breadth, leadership, credit, volatility, macro, risk appetite), a top-risk score, a regime with a posture playbook, a 10-item bottom checklist, watchlist trends | Ported; thresholds **unvalidated** beyond one episode |
 | **Sector research** | Sector rotation (equal-weight and ETF views, confirmation and leading flags, candidate lists, a backtest re-scored every run) and a multi-week drawdown screen | Ported; rotation **unvalidated** (describes rotation, does not yet forecast it) |
 | **Equity research** | EDGAR-first collection (12 XBRL quarters, filings text, Form 4s), automatic valuation levers from written rules, bear/base/bull fair value, BUY / ACCUMULATE / HOLD / TRIM levels, DCF cross-check, a cash-secured-put overlay | Ported; automatic levers are new and need review |
 | **Portfolio construction** | Multi-account (taxable / traditional / Roth) model builder, backtests with rebalancing and contributions, stress windows, tax-placement checks | Ported |
 | **Trading register** | Stock and option legs, FIFO P&L, cash by account, expire / assign / roll, thesis, invalidation and review dates, CSV export | Done |
-| **Performance** | Time- and money-weighted returns vs benchmarks, drawdown, attribution by idea source and strategy | Done; past option marks use intrinsic value |
+| **Performance** | Time- and money-weighted returns vs benchmarks, drawdown, attribution by idea source and strategy | Done; today's options at the live chain mid, past ones at intrinsic value |
 | **Optimization** | Risk parity, minimum variance, shrunk max-Sharpe, weight caps, 5/25 rebalancing bands | Done |
 | **Risk management** | Pre-trade PASS / WARN / BLOCK against your limits, scaled by market regime; every check logged with a fingerprint | Done |
 
@@ -49,6 +50,19 @@ folio-desk run equity MSFT --peers ORCL,GOOGL,AMZN,ADBE
 
 Set `[schedule] enabled = true` in `folio-desk.toml` to run signals, rotation and drawdowns every weekday after the close.
 
+## Worked examples
+
+- [A reviewed equity report (Intuit, September 2026)](docs/examples/equity-review-intuit-2026-09.md): what
+  a full primary-source review looks like.
+- [A cash-secured put from idea to register](docs/examples/put-trade-walkthrough.md): one fictional trade
+  through every desk.
+
+## Using it with Claude
+
+`skills/` holds two Claude skills: **folio-desk** (run the jobs, read results, check and log trades through
+the API) and **equity-review** (refine an automatic equity report from the filings, with a reason for every
+override). Copy them into your Claude skills folder.
+
 ## Data sources
 
 | Data | Default (free) | Optional |
@@ -74,9 +88,11 @@ folio_desk/          Python package: data layer, analytics, FastAPI app, CLI
   performance/       TWR, XIRR, attribution
   optimization/      risk parity, min variance, max Sharpe, rebalancing bands
   risk/              pre-trade risk check
+  decision/          the decision layer
   api/               REST API, background jobs, price cache
 web/                 React + TypeScript frontend (Vite, TanStack Query, Recharts, Tailwind)
-docs/                methods for each desk (signals, sectors, equity, portfolio, data sources)
+docs/                methods for each desk, decision rules, worked examples
+skills/              Claude skills for operating the desk and reviewing equity reports
 tests/               offline test suite (synthetic, deterministic data)
 ```
 

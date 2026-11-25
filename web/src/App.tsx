@@ -6,11 +6,13 @@ import Signals from "./pages/Signals";
 import { Drawdowns, Rotation } from "./pages/Sectors";
 import { EquityIndex, EquityReport } from "./pages/Equity";
 import Construction from "./pages/Construction";
+import Decisions from "./pages/Decisions";
 import Register from "./pages/Register";
 import { Optimization, Performance, Risk } from "./pages/Analytics";
 
 const NAV: { to: string; label: string; soon?: boolean }[] = [
-  { to: "/", label: "Market signals" },
+  { to: "/", label: "Decisions" },
+  { to: "/signals", label: "Market signals" },
   { to: "/sectors", label: "Sector rotation" },
   { to: "/drawdowns", label: "Drawdowns" },
   { to: "/equity", label: "Equity research" },
@@ -56,7 +58,8 @@ export default function App() {
       </aside>
       <main className="mx-auto w-full max-w-7xl p-4 md:p-6">
         <Routes>
-          <Route path="/" element={<Signals />} />
+          <Route path="/" element={<Decisions />} />
+          <Route path="/signals" element={<Signals />} />
           <Route path="/sectors" element={<Rotation />} />
           <Route path="/drawdowns" element={<Drawdowns />} />
           <Route path="/equity" element={<EquityIndex />} />

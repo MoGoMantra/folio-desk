@@ -83,17 +83,43 @@ def _save_trades(rows: list[dict]):
             s.add(db.Trade(**{k: r.get(k) for k in TRADE_FIELDS if k in r} | {"id": r.get("id") or ledger.new_id()}))
 
 
-def _marks(book: ledger.Book) -> tuple[dict[str, float], pd.DataFrame]:
-    """Latest closes for stocks; options marked at intrinsic value from the underlying's close."""
+def option_quotes(lots: list[ledger.Lot]) -> dict[str, float]:
+    """Live mid quotes for open option lots (free source; empty when unavailable)."""
+    from ..data.yahoo import option_mids
+    by_t: dict[str, list] = {}
+    for lot in lots:
+        if lot.asset == "option" and lot.expiry >= dt.date.today().isoformat():
+            by_t.setdefault(lot.ticker, []).append((lot.expiry, lot.opt_kind, float(lot.strike)))
+    out = {}
+    for t, wanted in by_t.items():
+        try:
+            mids = option_mids(t, wanted)
+        except Exception:
+            continue
+        for (e, k, s), v in mids.items():
+            out[f"{t} {e} {'P' if k == 'put' else 'C'} {s:g}"] = v
+    return out
+
+
+def _marks(book: ledger.Book, live_options: bool = True) -> tuple[dict[str, float], pd.DataFrame, dict[str, str]]:
+    """Latest closes for stocks; options at the live chain's mid when available, else intrinsic value.
+    Returns (marks, closes, mark source per instrument key)."""
     tickers = sorted({lot.ticker for lot in book.lots})
     px = prices.closes(tickers) if tickers else pd.DataFrame()
-    marks = {}
+    quotes = option_quotes(book.lots) if live_options else {}
+    marks, source = {}, {}
     for lot in book.lots:
+        if lot.asset == "option" and lot.key in quotes:
+            marks[lot.key], source[lot.key] = quotes[lot.key], "chain mid"
+            continue
         if lot.ticker not in px or px[lot.ticker].dropna().empty:
             continue
         spot = float(px[lot.ticker].dropna().iloc[-1])
-        marks[lot.key] = perf._intrinsic(lot.opt_kind, float(lot.strike), spot) if lot.asset == "option" else spot
-    return marks, px
+        if lot.asset == "option":
+            marks[lot.key], source[lot.key] = perf._intrinsic(lot.opt_kind, float(lot.strike), spot), "intrinsic"
+        else:
+            marks[lot.key], source[lot.key] = spot, "close"
+    return marks, px, source
 
 
 # ---------------------------------------------------------------- register
@@ -163,8 +189,10 @@ def option_action(a: OptionAction):
 @router.get("/register/positions")
 def register_positions():
     b = ledger.build_book(_trades(), _cashflows())
-    marks, _ = _marks(b)
+    marks, _, src = _marks(b)
     pos = ledger.positions(b, marks)
+    for x in pos:
+        x["markSource"] = src.get(x["key"])
     s = ledger.summary(b)
     value = sum(s["cash"].values()) + sum(p["value"] or 0 for p in pos)
     today = dt.date.today().isoformat()
@@ -172,7 +200,7 @@ def register_positions():
     reviews = [t for t in _trades() if t["review_date"] and t["review_date"] <= today and t["event"] == "trade"]
     return {"positions": pos, "summary": s, "portfolioValue": value, "shortPutNotional": sum(p.get("assignmentNotional", 0) for p in pos),
             "uncheckedTrades": len(unchecked), "reviewsDue": [{"id": t["id"], "ticker": t["ticker"], "review": t["review_date"], "thesis": t["thesis"]} for t in reviews],
-            "note": "Options are marked at intrinsic value from the underlying's last close."}
+            "note": "Shares at the last close. Options at the live chain's mid quote where available, otherwise intrinsic value (which ignores time value)."}
 
 
 class CashFlowIn(BaseModel):
@@ -230,7 +258,9 @@ def performance(p: PerfIn):
         raise HTTPException(404, "no trades in the register yet")
     tickers = sorted({t["ticker"] for t in trades} | set(p.benchmarks))
     px = prices.closes(tickers)
-    return perf.report(trades, cfs, px, p.benchmarks)
+    b = ledger.build_book(trades, cfs)
+    today_marks = option_quotes(b.lots)  # today's options at the chain mid; past days stay at intrinsic
+    return perf.report(trades, cfs, px, p.benchmarks, today_marks)
 
 
 # ---------------------------------------------------------------- optimization
@@ -296,15 +326,22 @@ def put_limits(limits: dict):
     return risk.merged_limits(limits)
 
 
-def risk_context(p: dict) -> dict:
+def book_context() -> dict:
+    """The part of the risk context that does not depend on the proposed trade (computed once per run)."""
     b = ledger.build_book(_trades(), _cashflows())
-    marks, px = _marks(b)
+    marks, _, _ = _marks(b)
     pos = ledger.positions(b, marks)
     s = ledger.summary(b)
-    t = p["ticker"]
     exposure: dict[str, float] = {}
     for x in pos:
         exposure[x["ticker"]] = exposure.get(x["ticker"], 0.0) + (x.get("assignmentNotional") or max(x["value"] or 0, 0))
+    return {"portfolioValue": sum(s["cash"].values()) + sum(x["value"] or 0 for x in pos), "cash": s["cash"], "exposure": exposure,
+            "positions": pos, "shortPutNotional": sum(x.get("assignmentNotional", 0) for x in pos)}
+
+
+def risk_context(p: dict, base: dict | None = None) -> dict:
+    base = base or book_context()
+    t = p["ticker"]
     sig = db.latest_doc("signals") or {}
     rep = db.get_doc("equity", t)
     spot, below200 = None, None
@@ -314,12 +351,12 @@ def risk_context(p: dict) -> dict:
         below200 = bool(h.iloc[-1] < h.iloc[-200:].mean()) if len(h) >= 200 else None
     except Exception:
         pass
-    return {"portfolioValue": sum(s["cash"].values()) + sum(x["value"] or 0 for x in pos), "cash": s["cash"], "exposure": exposure,
-            "shortPutNotional": sum(x.get("assignmentNotional", 0) for x in pos),
-            "accountShortPutNotional": sum(x.get("assignmentNotional", 0) for x in pos if x["account"] == p.get("account", "T")),
-            "regime": sig.get("regime"), "spot": spot, "below200": below200,
-            "report": (rep or {}).get("signal") | {"label": (rep or {}).get("signal", {}).get("label")} if rep else None,
-            "earningsDate": p.get("earnings_date")}
+    report = None
+    if rep and rep.get("signal"):
+        report = {k: rep["signal"].get(k) for k in ("acc", "buy", "trim", "fv", "label")}
+    return {k: v for k, v in base.items() if k != "positions"} | {
+        "accountShortPutNotional": sum(x.get("assignmentNotional", 0) for x in base["positions"] if x["account"] == p.get("account", "T")),
+        "regime": sig.get("regime"), "spot": spot, "below200": below200, "report": report, "earningsDate": p.get("earnings_date")}
 
 
 @router.post("/risk/check")
