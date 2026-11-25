@@ -29,7 +29,7 @@ bear / base / bull scenarios, and turns the result into priced levels.
 | Bull / bear margins | Bull m2 = base m2 + max(1.5pp, 1σ of 8Q margins); bear m1 = base m1 − 2pp; bear m2 = lowest of the last 8 quarters |
 | Shares | Latest diluted count; growth = trailing-4Q net change; bear +1pp for unannounced dilution |
 | Exit P/E (value year FY+2) | Peer median P/E × clamp(company EPS CAGR ÷ peer EPS growth, 0.8, 1.3). Bull = min(base × 1.3, max(base × 1.2, peer 75th pct)); bear = min(base × 0.65, peer 25th pct × 0.85). Peers with negative or > 80x P/E are dropped |
-| Exit P/E caps (lower wins) | Growth cap = max(12x, 100 × base EPS growth in the year after the value year), i.e. PEG 1.0; the stock's own median trailing GAAP P/E when 8+ profitable quarters exist |
+| Exit P/E caps (lower wins) | Growth cap = max(15x, 150 × base EPS growth in the year after the value year), i.e. PEG 1.5 with a 15x floor; the stock's own median trailing GAAP P/E when 8+ profitable quarters exist |
 | Cost of equity | 4.2% + β × 5.5%, rounded to 0.5%, floor 9%, cap 11% (15% when β ≥ 2) |
 | DCF | Capex grows with sales; D&A and working capital as % of sales from the trailing 4Q; WACC = CoE − 1pp when leverage is low; terminal growth 3 / 3.5 / 4% (2.5 / 3 / 3% mature) |
 | Weights | 25 / 50 / 25 |
@@ -51,8 +51,9 @@ is weaker than one the DCF supports.
 - GAAP net margin basis. Peer forward P/Es usually rest on non-GAAP consensus, so automatic values lean
   conservative for companies with large stock comp or amortisation.
 - Trailing GAAP P/Es (the fallback when consensus is unavailable) include one-off gains and losses.
-- Without FY+2 consensus the decay cannot be solved, so the default 0.25 applies; combined with the PEG 1.0
-  growth cap this can understate durable compounders. Review the exit multiple before acting.
+- Without FY+2 consensus the decay cannot be solved, so the default 0.25 applies and growth after the value
+  year is understated. The growth cap was loosened from PEG 1.0 / 12x to PEG 1.5 / 15x for this reason
+  (a live test valued a large, durable compounder at 12x earnings). Review the exit multiple before acting.
 
 ## Options overlay
 

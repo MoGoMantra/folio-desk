@@ -199,7 +199,7 @@ def build(c: dict, today: dt.date | None = None) -> tuple[dict, list[str]]:
     else:
         base_pe, why, p75, p25 = 16.0, "default 16x (no usable peers and no usable own P/E history)", None, None
     g_after = eps[3] / eps[2] - 1 if eps[2] > 0 else 0
-    caps = [("growth cap (PEG 1.0 on EPS growth after the value year)", max(12.0, 100 * g_after))]
+    caps = [(f"growth cap (PEG {engine.PEG_CAP} on EPS growth after the value year, floor {engine.PE_FLOOR:.0f}x)", engine.growth_cap(g_after))]
     if own.get("usable"):
         caps.append(("own median trailing P/E", own["medianPE"]))
     bound = None

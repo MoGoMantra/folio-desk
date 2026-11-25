@@ -8,6 +8,15 @@ from __future__ import annotations
 
 import statistics as st
 
+# Exit-multiple growth cap: base exit P/E <= max(PE_FLOOR, PEG_CAP x 100 x EPS growth in the year after the value year).
+# PEG 1.5 with a 15x floor: a stricter PEG 1.0 / 12x cap forced durable compounders onto ~12x when decay was a default.
+PEG_CAP = 1.5
+PE_FLOOR = 15.0
+
+
+def growth_cap(g_after: float) -> float:
+    return max(PE_FLOOR, PEG_CAP * 100 * g_after)
+
 
 def run(m: dict, i: int) -> dict:
     Y, prev = [], None
@@ -136,8 +145,8 @@ def validate(R: dict, mode: str = "auto", collect: dict | None = None, locked_pe
     if v + 1 < len(yrs):
         rb = run(m, 1)
         g_after = rb["Y"][v + 1]["eps"] / rb["Y"][v]["eps"] - 1 if rb["Y"][v]["eps"] > 0 else 0
-        cap_pe = max(12.0, 100 * g_after)
-        need(mu[1] <= cap_pe + 0.5, f"base exit P/E {mu[1]}x exceeds the growth cap {cap_pe:.1f}x (PEG 1.0 on {g_after:.0%} EPS growth after the value year)")
+        cap_pe = growth_cap(g_after)
+        need(mu[1] <= cap_pe + 0.5, f"base exit P/E {mu[1]}x exceeds the growth cap {cap_pe:.1f}x (PEG {PEG_CAP} on {g_after:.0%} EPS growth after the value year, floor {PE_FLOOR:.0f}x)")
     if collect:
         o = collect.get("ownPE") or {}
         if o.get("usable"):

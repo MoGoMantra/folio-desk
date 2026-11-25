@@ -128,3 +128,18 @@ def test_edgar_sends_user_agent():
     ec = EdgarClient(user_agent="Jane Doe jane@example.com", transport=httpx.MockTransport(handler))
     assert ec.cik_for("aapl") == (320193, "Apple Inc.")
     assert seen["ua"] == "Jane Doe jane@example.com"
+
+
+def test_growth_cap_is_peg_1_5_with_15x_floor():
+    assert engine.growth_cap(0.04) == 15.0           # floor
+    assert engine.growth_cap(0.20) == pytest.approx(30.0)
+
+
+def test_compounder_without_peers_or_consensus_keeps_15x_floor():
+    c = make_collect()
+    c["estimates"] = {}
+    c["peers"], c["peerSet"] = [], []
+    c["ownPE"] = {"usable": False}
+    m, _ = autolevers.build(c, today=dt.date(2026, 11, 20))
+    assert m["mult"][1] >= 15.0
+    assert engine.validate({"ticker": "T", "asOf": "x", "price": 60, "model": m}) == []
