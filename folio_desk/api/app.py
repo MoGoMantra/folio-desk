@@ -17,6 +17,7 @@ from ..config import get_settings
 from ..construction import portfolio as pf
 from ..equity import engine
 from . import jobs, prices
+from .phase2 import router as phase2_router
 
 def _startup():
     if db._Session is None:
@@ -36,6 +37,9 @@ async def lifespan(_app):
 
 app = FastAPI(title="folio-desk", version=__version__, lifespan=lifespan,
               description="Research and portfolio desk for individual investors. Research output, not investment advice.")
+
+
+app.include_router(phase2_router)
 
 
 # ---------------------------------------------------------------- meta

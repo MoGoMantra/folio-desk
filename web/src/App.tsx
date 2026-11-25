@@ -6,17 +6,19 @@ import Signals from "./pages/Signals";
 import { Drawdowns, Rotation } from "./pages/Sectors";
 import { EquityIndex, EquityReport } from "./pages/Equity";
 import Construction from "./pages/Construction";
+import Register from "./pages/Register";
+import { Optimization, Performance, Risk } from "./pages/Analytics";
 
 const NAV: { to: string; label: string; soon?: boolean }[] = [
   { to: "/", label: "Market signals" },
   { to: "/sectors", label: "Sector rotation" },
   { to: "/drawdowns", label: "Drawdowns" },
   { to: "/equity", label: "Equity research" },
-  { to: "/register", label: "Trading register", soon: true },
+  { to: "/register", label: "Trading register" },
   { to: "/construction", label: "Portfolio construction" },
-  { to: "/performance", label: "Performance", soon: true },
-  { to: "/optimization", label: "Optimization", soon: true },
-  { to: "/risk", label: "Risk management", soon: true },
+  { to: "/performance", label: "Performance" },
+  { to: "/optimization", label: "Optimization" },
+  { to: "/risk", label: "Risk management" },
   { to: "/settings", label: "Settings" },
 ];
 
@@ -60,6 +62,10 @@ export default function App() {
           <Route path="/equity" element={<EquityIndex />} />
           <Route path="/equity/:ticker" element={<EquityReport />} />
           <Route path="/construction" element={<Construction />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/performance" element={<Performance />} />
+          <Route path="/optimization" element={<Optimization />} />
+          <Route path="/risk" element={<Risk />} />
           <Route path="/settings" element={<Settings />} />
           {NAV.filter((n) => n.soon).map((n) => <Route key={n.to} path={n.to} element={<Soon name={n.label} />} />)}
         </Routes>

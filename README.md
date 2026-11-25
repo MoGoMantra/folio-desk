@@ -17,10 +17,10 @@ portfolio analysis, with a web interface on top.
 | **Sector research** | Sector rotation (equal-weight and ETF views, confirmation and leading flags, candidate lists, a backtest re-scored every run) and a multi-week drawdown screen | Ported; rotation **unvalidated** (describes rotation, does not yet forecast it) |
 | **Equity research** | EDGAR-first collection (12 XBRL quarters, filings text, Form 4s), automatic valuation levers from written rules, bear/base/bull fair value, BUY / ACCUMULATE / HOLD / TRIM levels, DCF cross-check, a cash-secured-put overlay | Ported; automatic levers are new and need review |
 | **Portfolio construction** | Multi-account (taxable / traditional / Roth) model builder, backtests with rebalancing and contributions, stress windows, tax-placement checks | Ported |
-| **Trading register** | Stock and option legs, rolls, assignments, thesis and invalidation triggers | Phase 2 |
-| **Performance** | Time- and money-weighted returns, attribution by idea source | Phase 2 |
-| **Optimization** | Risk parity, constrained mean-variance, rebalancing bands | Phase 2 |
-| **Risk management** | A PASS / BLOCK check on every proposed trade against your limits | Phase 2 |
+| **Trading register** | Stock and option legs, FIFO P&L, cash by account, expire / assign / roll, thesis, invalidation and review dates, CSV export | Done |
+| **Performance** | Time- and money-weighted returns vs benchmarks, drawdown, attribution by idea source and strategy | Done; past option marks use intrinsic value |
+| **Optimization** | Risk parity, minimum variance, shrunk max-Sharpe, weight caps, 5/25 rebalancing bands | Done |
+| **Risk management** | Pre-trade PASS / WARN / BLOCK against your limits, scaled by market regime; every check logged with a fingerprint | Done |
 
 ## Quick start
 
@@ -70,9 +70,13 @@ folio_desk/          Python package: data layer, analytics, FastAPI app, CLI
   sectors/           rotation and drawdown screens
   equity/            collector, automatic levers, valuation engine, forces ledger, risk-factor diff
   construction/      backtests, stats, stress windows, tax placement
+  register/          trading register ledger (lots, P&L, option life-cycle)
+  performance/       TWR, XIRR, attribution
+  optimization/      risk parity, min variance, max Sharpe, rebalancing bands
+  risk/              pre-trade risk check
   api/               REST API, background jobs, price cache
 web/                 React + TypeScript frontend (Vite, TanStack Query, Recharts, Tailwind)
-docs/                methods for each desk
+docs/                methods for each desk (signals, sectors, equity, portfolio, data sources)
 tests/               offline test suite (synthetic, deterministic data)
 ```
 

@@ -243,6 +243,10 @@ def auto_report(c: dict, today: dt.date | None = None) -> dict:
     price = c["price"]["price"]
     problems = engine.validate({"ticker": c["ticker"], "asOf": c["collectedAt"], "price": price, "model": m}, "auto", collect=c)
     sig = engine.signal(m, price)
+    pe_rule = next((r["rule"] for r in m["rules"] if r["lever"] == "Exit P/E"), "")
+    if "trailing GAAP" in pe_rule or "default 16x" in pe_rule or "own median" in pe_rule:
+        sig["flags"].append("No consensus estimates: the exit multiple rests on trailing GAAP P/Es or a fallback, "
+                            "which one-off gains or losses can distort. Treat the label as provisional.")
     q = c["sec"]["quarters"]
     return {
         "schema": 2, "mode": "auto", "ticker": c["ticker"], "company": c["sec"].get("name"), "asOf": c["collectedAt"],

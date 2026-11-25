@@ -143,3 +143,13 @@ def test_compounder_without_peers_or_consensus_keeps_15x_floor():
     m, _ = autolevers.build(c, today=dt.date(2026, 11, 20))
     assert m["mult"][1] >= 15.0
     assert engine.validate({"ticker": "T", "asOf": "x", "price": 60, "model": m}) == []
+
+
+def test_fallback_multiple_raises_a_visible_flag():
+    c = make_collect()
+    c["estimates"] = {}
+    for p in c["peers"]:
+        p.pop("fwdPE")
+        p["trailingPE"] = 20.0
+    rep = autolevers.auto_report(c, today=dt.date(2026, 11, 20))
+    assert any("provisional" in f for f in rep["signal"]["flags"])

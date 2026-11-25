@@ -54,6 +54,57 @@ class Portfolio(Base):
     updated_at: Mapped[dt.datetime] = mapped_column(DateTime(timezone=True), default=_now, onupdate=_now)
 
 
+class Trade(Base):
+    """One line in the trading register. Stocks: qty = shares, price per share. Options: qty = contracts,
+    price = premium per share (x multiplier for dollars). Expirations, assignments and exercises are stored as
+    trades with event set, so every position change is one row."""
+    __tablename__ = "trades"
+    id: Mapped[str] = mapped_column(String(32), primary_key=True)
+    date: Mapped[str] = mapped_column(String(10))
+    account: Mapped[str] = mapped_column(String(32), default="T")
+    ticker: Mapped[str] = mapped_column(String(16))
+    asset: Mapped[str] = mapped_column(String(8), default="stock")        # stock | option
+    side: Mapped[str] = mapped_column(String(4))                          # buy | sell
+    qty: Mapped[float] = mapped_column(Float)
+    price: Mapped[float] = mapped_column(Float)
+    fees: Mapped[float] = mapped_column(Float, default=0.0)
+    opt_kind: Mapped[str] = mapped_column(String(4), default="")          # put | call
+    strike: Mapped[float | None] = mapped_column(Float, nullable=True)
+    expiry: Mapped[str] = mapped_column(String(10), default="")
+    multiplier: Mapped[float] = mapped_column(Float, default=100.0)
+    strategy: Mapped[str] = mapped_column(String(32), default="")         # e.g. long stock, cash-secured put, covered call, PMCC long, PMCC short
+    idea_source: Mapped[str] = mapped_column(String(32), default="")      # signals | rotation | drawdowns | equity | other
+    thesis: Mapped[str] = mapped_column(Text, default="")
+    invalidation: Mapped[str] = mapped_column(Text, default="")
+    review_date: Mapped[str] = mapped_column(String(10), default="")
+    note: Mapped[str] = mapped_column(Text, default="")
+    event: Mapped[str] = mapped_column(String(10), default="trade")       # trade | expire | assign | exercise | roll
+    link_id: Mapped[str] = mapped_column(String(32), default="")
+    check_id: Mapped[str] = mapped_column(String(32), default="")
+    created_at: Mapped[dt.datetime] = mapped_column(DateTime(timezone=True), default=_now)
+
+
+class CashFlow(Base):
+    """External money in (+) or out (-) of an account: deposits, withdrawals, transfers."""
+    __tablename__ = "cashflows"
+    id: Mapped[str] = mapped_column(String(32), primary_key=True)
+    date: Mapped[str] = mapped_column(String(10))
+    account: Mapped[str] = mapped_column(String(32), default="T")
+    amount: Mapped[float] = mapped_column(Float)
+    note: Mapped[str] = mapped_column(Text, default="")
+
+
+class RiskCheck(Base):
+    """Every pre-trade check is kept, with a fingerprint of exactly what was checked."""
+    __tablename__ = "risk_checks"
+    id: Mapped[str] = mapped_column(String(32), primary_key=True)
+    created_at: Mapped[dt.datetime] = mapped_column(DateTime(timezone=True), default=_now)
+    verdict: Mapped[str] = mapped_column(String(8))                       # PASS | WARN | BLOCK
+    fingerprint: Mapped[str] = mapped_column(String(64))
+    proposal: Mapped[dict] = mapped_column(JSON)
+    result: Mapped[dict] = mapped_column(JSON)
+
+
 _engine = None
 _Session: sessionmaker | None = None
 
