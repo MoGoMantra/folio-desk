@@ -115,3 +115,11 @@ def test_review_requires_reasons_and_guards(client):
     assert client.post("/api/equity/TEST/review", json={"model": bad, "overrides": [{"lever": "Exit P/E", "why": "x"}]}).status_code == 422
     ok = client.post("/api/equity/TEST/review", json={"model": m, "overrides": [{"lever": "Exit P/E", "why": "peer set de-rated after earnings"}]})
     assert ok.status_code == 200 and db.get_doc("equity", "TEST")["mode"] == "reviewed"
+
+
+def test_provisional_report_gives_no_call_and_no_put():
+    rep = report(cands=[{"expiry": "2027-01-15", "strike": 105, "bid": 1.5, "annYield": 0.12, "dte": 56, "belowBuy": True}])
+    rep["provisional"] = True
+    assert call(rep, 100)["action"] == "NO VIEW"
+    assert call(rep, 100, held_qty=5, held_value=500)["action"] == "HOLD"
+    assert put_idea(rep, "HOLD", "Risk-on", DEFAULT_LIMITS) is None

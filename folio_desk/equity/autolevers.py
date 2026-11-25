@@ -244,15 +244,21 @@ def auto_report(c: dict, today: dt.date | None = None) -> dict:
     problems = engine.validate({"ticker": c["ticker"], "asOf": c["collectedAt"], "price": price, "model": m}, "auto", collect=c)
     sig = engine.signal(m, price)
     pe_rule = next((r["rule"] for r in m["rules"] if r["lever"] == "Exit P/E"), "")
-    if "trailing GAAP" in pe_rule or "default 16x" in pe_rule or "own median" in pe_rule:
+    provisional = "trailing GAAP" in pe_rule or "default 16x" in pe_rule or "own median" in pe_rule
+    if provisional:  # no verdict until the inputs can support one; levels stay visible for reference
         sig["flags"].append("No consensus estimates: the exit multiple rests on trailing GAAP P/Es or a fallback, "
-                            "which one-off gains or losses can distort. Treat the label as provisional.")
+                            "which one-off gains or losses can distort.")
+        sig["levelLabel"] = sig["label"]
+        sig["label"] = "PROVISIONAL"
     q = c["sec"]["quarters"]
     return {
         "schema": 2, "mode": "auto", "ticker": c["ticker"], "company": c["sec"].get("name"), "asOf": c["collectedAt"],
         "price": price, "priceDate": c["price"]["date"], "model": m,
         "signal": {k: (round(v, 4) if isinstance(v, float) else v) for k, v in sig.items()},
-        "headline": f"{sig['label']}: fair value ${sig['fv']:.2f} vs ${price:.2f} (auto levers; review before acting).",
+        "provisional": provisional,
+        "headline": (f"PROVISIONAL: no consensus estimates, so no call. Fair value ${sig['fv']:.2f} vs ${price:.2f} is for reference only. "
+                     "Add a consensus source (docs/data-sources.md) or review the exit multiple."
+                     if provisional else f"{sig['label']}: fair value ${sig['fv']:.2f} vs ${price:.2f} (auto levers; review before acting)."),
         "options": options_overlay((c.get("options") or {}).get("rows", []), price, sig["acc"], sig["buy"]),
         "history": {"quarters": [r["end"] for r in q], "revenue": [r.get("revenue") for r in q],
                     "netMargin": [(r["netIncome"] / r["revenue"]) if r.get("netIncome") is not None and r.get("revenue") else None for r in q]},

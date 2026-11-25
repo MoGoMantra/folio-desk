@@ -152,4 +152,15 @@ def test_fallback_multiple_raises_a_visible_flag():
         p.pop("fwdPE")
         p["trailingPE"] = 20.0
     rep = autolevers.auto_report(c, today=dt.date(2026, 11, 20))
-    assert any("provisional" in f for f in rep["signal"]["flags"])
+    assert rep["provisional"] and rep["signal"]["label"] == "PROVISIONAL"
+    assert rep["signal"]["levelLabel"] in ("BUY", "ACCUMULATE", "HOLD", "TRIM")
+    assert rep["headline"].startswith("PROVISIONAL") and rep["signal"]["fv"] > 0
+
+
+def test_nasdaq_estimates_parse():
+    from folio_desk.data.unofficial import nasdaq_estimates
+    body = {"data": {"yearlyForecast": {"rows": [
+        {"fiscalEnd": "Jun 2027", "consensusEPSForecast": "15.20", "noOfEstimates": "32"},
+        {"fiscalEnd": "Jun 2028", "consensusEPSForecast": "17.45", "noOfEstimates": "30"}]}}}
+    est = nasdaq_estimates("msft", transport=httpx.MockTransport(lambda req: httpx.Response(200, json=body)))
+    assert (est.eps_fy1, est.eps_fy2, est.n_analysts) == (15.20, 17.45, 32)

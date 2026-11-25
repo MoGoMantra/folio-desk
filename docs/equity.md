@@ -39,6 +39,13 @@ bear / base / bull scenarios, and turns the result into priced levels.
 - Margin of safety = clamp(0.5 × (base PV − bear PV) ÷ base PV, 15%, 40%). Only downside dispersion counts.
 - BUY below FV × (1 − MoS); ACCUMULATE below FV × (1 − MoS/2); TRIM above FV × (1 + MoS/2); HOLD between.
 
+## Provisional reports
+
+When no consensus estimates are available, the exit multiple falls back to trailing GAAP P/Es (or a default),
+and the report is marked **PROVISIONAL**: fair value and levels stay visible for reference, but the label is
+withheld and the Decisions page shows NO VIEW. A reviewed report (with a reason for each override) or a
+consensus source clears it.
+
 ## Reliability flags
 
 The report flags when the scenario value and the DCF differ by more than 2x, when terminal value is more

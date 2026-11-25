@@ -59,6 +59,11 @@ def decide(ticker: str, *, report: dict | None, price: float | None, regime: str
         return base | {"action": "HOLD" if held else "NO VIEW", "confidence": "Low", "size": 0.0,
                        "reasons": [f"{why}: run the equity desk before acting."], "issues": [why]}
 
+    if report.get("provisional"):
+        return base | {"action": "HOLD" if held else "NO VIEW", "confidence": "Low", "size": 0.0, "shares": 0, "provisional": True,
+                       "reasons": [f"Equity report is PROVISIONAL (no consensus estimates): fair value ${sig.get('fv', 0):,.2f} is for reference only.",
+                                   "Add a consensus source or review the exit multiple to get a call."],
+                       "issues": ["provisional equity report"]}
     label, fv, buy, acc, trim = sig["label"], sig["fv"], sig["buy"], sig["acc"], sig["trim"]
     if px is not None and px != report.get("price"):  # re-label at today's price with the stored levels
         label = "BUY" if px < buy else "ACCUMULATE" if px < acc else "TRIM" if px > trim else "HOLD"
@@ -137,7 +142,7 @@ def decide(ticker: str, *, report: dict | None, price: float | None, regime: str
 
 def put_idea(report: dict | None, action: str, regime: str | None, limits: dict) -> dict | None:
     """The best cash-secured put at or below ACCUMULATE, when owning the stock there is consistent with the call."""
-    if not report or action in ("TRIM", "SELL", "AVOID", "NO VIEW"):
+    if not report or report.get("provisional") or action in ("TRIM", "SELL", "AVOID", "NO VIEW"):
         return None
     cands = ((report.get("options") or {}).get("candidates")) or []
     if not cands:

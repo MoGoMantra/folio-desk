@@ -4,7 +4,7 @@ Prices      : [data] price_providers in order; a paid provider is skipped when i
               provider returns nothing for fall through to the next one.
 Universe    : FMP screener (if keyed) > Nasdaq screener (if allow_unofficial) > S&P 500 constituents
               (open dataset, GICS sectors, no market caps).
-Estimates   : FMP (if keyed) > yfinance.
+Estimates   : FMP (if keyed) > yfinance > Nasdaq analyst forecast (if allow_unofficial; EPS only).
 Options     : yfinance.
 """
 from __future__ import annotations
@@ -98,7 +98,14 @@ def estimates(ticker: str, s: Settings | None = None) -> Estimates:
             return FmpProvider(s.data.fmp_api_key).estimates(ticker)
         except Exception as e:
             log.warning("FMP estimates failed for %s: %s", ticker, e)
-    return YahooProvider().estimates(ticker)
+    est = YahooProvider().estimates(ticker)
+    if not (est.eps_fy1 or est.rev_fy1) and s.data.allow_unofficial:
+        try:
+            from .unofficial import nasdaq_estimates
+            return nasdaq_estimates(ticker)
+        except Exception as e:
+            log.warning("Nasdaq estimates failed for %s: %s", ticker, e)
+    return est
 
 
 def option_chain(ticker: str, kind: str = "put", min_dte: int = 30, max_dte: int = 130) -> list[OptionRow]:

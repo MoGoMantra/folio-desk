@@ -18,7 +18,8 @@ instruction; folio-desk never places orders.
 
 1. **Funds** (anything in the fund list without an equity report): judged by allocation, not valuation.
    HOLD if held; use construction and rebalancing.
-2. **No report, or a report older than 120 days:** NO VIEW (HOLD if held). Run the equity desk first.
+2. **No report, a report older than 120 days, or a PROVISIONAL report:** NO VIEW (HOLD if held), no size
+   and no put idea. Run the equity desk with a consensus source, or review the report.
 3. **Re-label at today's price** using the stored levels: below BUY → BUY zone; below ACCUMULATE → ACCUMULATE
    zone; above TRIM → TRIM zone; otherwise HOLD zone.
 4. **Base call:** BUY zone → BUY (ADD if held). ACCUMULATE zone → BUY / ADD at starter size (a third).
@@ -40,7 +41,5 @@ instruction; folio-desk never places orders.
 
 ## Known weakness
 
-The call is only as good as the equity desk's levels. In automatic mode without consensus estimates, the exit
-multiple falls back to trailing GAAP P/Es, which reads bearish on durable compounders. Those reports carry a
-"provisional" flag and the call's confidence drops. Review the levers (or run with a consensus source) before
-acting on a TRIM or AVOID.
+The call is only as good as the equity desk's levels, and those are relative to the peer set you choose: a
+de-rated peer group pulls the exit multiple down. Look at the peer table before acting on a TRIM or AVOID.

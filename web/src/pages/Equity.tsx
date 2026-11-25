@@ -8,16 +8,16 @@ import { Button, Card, Chip, Empty, Kpi, KpiGrid, Note, RunButton, Table, type T
 
 interface Scenario { g: number; d: number; m1: number; m2: number }
 interface Model { years: string[]; valueYear: number; drivers: { name: string; base: number; m0: number; sc: Scenario[] }[]; mult: number[]; coe: number; beta: number; rules: { lever: string; rule: string; value: string }[]; calibration: { label: string; model: number; ref: string }[]; overrides: { lever: string; why: string }[]; [k: string]: unknown }
-interface Sig { fv: number; buy: number; acc: number; trim: number; label: string; dcf: number; mos: number; tvShare: number; pvs: number[]; flags: string[] }
+interface Sig { fv: number; buy: number; acc: number; trim: number; label: string; levelLabel?: string; dcf: number; mos: number; tvShare: number; pvs: number[]; flags: string[] }
 interface Report {
-  ticker: string; company: string; asOf: string; price: number; priceDate: string; mode: string; headline: string; model: Model; signal: Sig;
+  ticker: string; company: string; asOf: string; price: number; priceDate: string; mode: string; headline: string; model: Model; signal: Sig; provisional?: boolean;
   options: { candidates: { expiry: string; dte: number; strike: number; bid: number; annYield: number; belowBuy: boolean; otmPct: number }[]; verdict: string };
   history: { quarters: string[]; revenue: (number | null)[]; netMargin: (number | null)[] };
   warnings: string[]; problems: string[]; insiders?: { openMarketBuys: number; openMarketSells: number; buyValue: number; sellValue: number };
 }
 interface IndexRow { ticker: string; company: string; asOf: string; price: number; label: string; fv: number }
 
-export const LABEL_TONE: Record<string, Tone> = { BUY: "good", ACCUMULATE: "info", HOLD: "muted", TRIM: "warn" };
+export const LABEL_TONE: Record<string, Tone> = { BUY: "good", ACCUMULATE: "info", HOLD: "muted", TRIM: "warn", PROVISIONAL: "info" };
 
 export function EquityIndex() {
   const idx = useQuery({ queryKey: ["equity-index"], queryFn: () => api<IndexRow[]>("/api/equity") });
@@ -101,8 +101,13 @@ function ReportView({ r }: { r: Report }) {
     <>
       <Card title={`${r.ticker} · ${r.company}`} sub={`price ${usd(r.price)} on ${r.priceDate} · ${r.mode === "auto" ? "automatic levers" : "reviewed"}`}>
         <div className="mb-3 flex flex-wrap items-center gap-3">
-          <Chip tone={LABEL_TONE[sig.label] ?? "muted"} meaning="model signal">{sig.label}</Chip>
+          {r.provisional ? (
+            <Chip tone="info" meaning="no call: consensus estimates were unavailable, so the exit multiple is a fallback">PROVISIONAL</Chip>
+          ) : (
+            <Chip tone={LABEL_TONE[sig.label] ?? "muted"} meaning="model signal">{sig.label}</Chip>
+          )}
           <span className="text-sm">{r.headline}</span>
+          {r.provisional && <span className="text-xs text-muted">(levels alone would read {sig.levelLabel ?? sig.label}; not a call)</span>}
           {edited && <Chip tone="info" meaning="levers edited on this page, not saved">edited</Chip>}
         </div>
         <KpiGrid>

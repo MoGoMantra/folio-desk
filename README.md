@@ -23,21 +23,20 @@ portfolio analysis, with a web interface on top.
 | **Optimization** | Risk parity, minimum variance, shrunk max-Sharpe, weight caps, 5/25 rebalancing bands | Done |
 | **Risk management** | Pre-trade PASS / WARN / BLOCK against your limits, scaled by market regime; every check logged with a fingerprint | Done |
 
-## Quick start
+## Install
+
+Python 3.11 or newer. Install the latest release (the web app is built in, no Node needed):
 
 ```bash
-git clone https://github.com/MoGoMantra/folio-desk.git
-cd folio-desk
-pip install -e .            # Python 3.11+
+pip install https://github.com/MoGoMantra/folio-desk/releases/download/v0.1.0/folio_desk-0.1.0-py3-none-any.whl
 folio-desk init             # writes folio-desk.toml; set [sec] user_agent to your name and email
 folio-desk serve            # http://127.0.0.1:8765
 ```
 
-The web app ships prebuilt in releases. From a source checkout, build it once (needs Node 20+):
-
-```bash
-cd web && npm install && npm run build
-```
+**Recommended: a consensus-estimates source.** Equity calls need analyst consensus for the exit multiple.
+Without it a report is marked PROVISIONAL (levels shown for reference, no call). Either set a free
+Financial Modeling Prep key (`[data] fmp_api_key`) or opt in to the unofficial Nasdaq source
+(`[data] allow_unofficial = true`). See [docs/data-sources.md](docs/data-sources.md).
 
 Run jobs from the command line as well:
 
@@ -46,9 +45,20 @@ folio-desk run signals
 folio-desk run rotation
 folio-desk run drawdowns
 folio-desk run equity MSFT --peers ORCL,GOOGL,AMZN,ADBE
+folio-desk run decisions
 ```
 
-Set `[schedule] enabled = true` in `folio-desk.toml` to run signals, rotation and drawdowns every weekday after the close.
+Set `[schedule] enabled = true` in `folio-desk.toml` to run signals, rotation, drawdowns and decisions every
+weekday after the close.
+
+### From source
+
+```bash
+git clone https://github.com/MoGoMantra/folio-desk.git && cd folio-desk
+pip install -e ".[dev]"
+cd web && npm install && npm run build && cd ..   # Node 20+; builds the web app into the package
+folio-desk serve
+```
 
 ## Worked examples
 
@@ -70,7 +80,7 @@ override). Copy them into your Claude skills folder.
 | Daily prices | [yfinance](https://github.com/ranaroussi/yfinance) (community library over Yahoo Finance's public web endpoints; not an official API) | Polygon, Tiingo, FMP (set the key, list the provider first) |
 | Fundamentals, filings, insider trades | SEC EDGAR (official; needs your name and email as the User-Agent) | — |
 | Stock universe | S&P 500 constituents ([open dataset](https://github.com/datasets/s-and-p-500-companies)) | FMP screener; Nasdaq's website screener (opt-in, unofficial) |
-| Consensus estimates | yfinance | FMP |
+| Consensus estimates | yfinance | FMP; Nasdaq analyst forecast (opt-in, unofficial, EPS only) |
 | Option chains | yfinance | — |
 
 Free sources can lag, change or rate-limit. See [docs/data-sources.md](docs/data-sources.md).

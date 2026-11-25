@@ -1,0 +1,53 @@
+name: Release
+
+# Push a tag like v0.1.0 (matching `version` in pyproject.toml) to build the web app into the package,
+# run every test, build the wheel and source archive, and publish them as a GitHub Release.
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Tag must match the package version
+        run: |
+          v=$(python3 -c "import tomllib;print(tomllib.load(open('pyproject.toml','rb'))['project']['version'])")
+          if [ "v$v" != "${GITHUB_REF_NAME}" ]; then echo "tag ${GITHUB_REF_NAME} != pyproject version v$v"; exit 1; fi
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - name: Build the web app into the package
+        working-directory: web
+        run: |
+          npm ci
+          npm run typecheck
+          npm test
+          npx vite build
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Test and build
+        run: |
+          pip install -e ".[dev]" build
+          pytest -q
+          python -m build
+          python -c "import zipfile,glob,sys; n=zipfile.ZipFile(glob.glob('dist/*.whl')[0]).namelist(); sys.exit(0 if any(x.endswith('static/index.html') for x in n) else 'web app missing from wheel')"
+
+      - name: Publish the GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${GITHUB_REF_NAME}" dist/* \
+            --title "folio-desk ${GITHUB_REF_NAME}" \
+            --notes "Install: \`pip install https://github.com/${GITHUB_REPOSITORY}/releases/download/${GITHUB_REF_NAME}/folio_desk-${GITHUB_REF_NAME#v}-py3-none-any.whl\`, then \`folio-desk init\` and \`folio-desk serve\`. Research software, not investment advice. See README.md."

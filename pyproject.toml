@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=69", "wheel"]
+requires = ["setuptools>=77", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -7,12 +7,12 @@ name = "folio-desk"
 version = "0.1.0"
 description = "An open-source research and portfolio desk for individual investors: market signals, equity and sector research, a trading register, portfolio construction, performance, optimization and risk checks."
 readme = "README.md"
-license = { text = "MIT" }
+license = "MIT"
+license-files = ["LICENSE"]
 requires-python = ">=3.11"
 authors = [{ name = "folio-desk contributors" }]
 keywords = ["investing", "portfolio", "equity research", "options", "sec edgar", "backtesting"]
 classifiers = [
-  "License :: OSI Approved :: MIT License",
   "Programming Language :: Python :: 3",
   "Intended Audience :: Financial and Insurance Industry",
   "Topic :: Office/Business :: Financial :: Investment",

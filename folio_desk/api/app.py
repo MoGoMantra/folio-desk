@@ -216,7 +216,7 @@ def equity_review(ticker: str, body: Review):
     if problems:
         raise HTTPException(422, {"problems": problems})
     sig = engine.signal(m, rep["price"])
-    new = rep | {"mode": "reviewed", "model": m, "signal": sig, "reviewedAt": jobs._now(),
+    new = rep | {"mode": "reviewed", "model": m, "signal": sig, "reviewedAt": jobs._now(), "provisional": False,
                  "headline": f"{sig['label']}: fair value ${sig['fv']:.2f} vs ${rep['price']:.2f} (reviewed: {len(body.overrides)} override(s))."}
     if body.triggers is not None:
         new["triggers"] = body.triggers

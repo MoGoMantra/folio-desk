@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import httpx
 
-from .base import DataError, UniverseMember
+from .base import DataError, Estimates, UniverseMember
 
 # Nasdaq's sector names -> the GICS-style names used across folio-desk
 NASDAQ_TO_GICS = {
@@ -56,3 +56,25 @@ def nasdaq_universe(min_cap: float = 2e9, min_price: float = 2.0, transport: htt
         out.append(UniverseMember(symbol=sym.replace("/", "."), name=row.get("name", "").strip(), sector=sec,
                                   industry=row.get("industry") or "", market_cap=mc))
     return out
+
+
+def nasdaq_estimates(ticker: str, transport: httpx.BaseTransport | None = None) -> Estimates:
+    """Annual EPS consensus (current and next fiscal year) from Nasdaq's analyst-forecast page data.
+    EPS only: Nasdaq does not publish revenue consensus there."""
+    url = f"https://api.nasdaq.com/api/analyst/{ticker.upper()}/earnings-forecast"
+    with httpx.Client(timeout=30, transport=transport, headers={"User-Agent": "folio-desk (open-source research tool)",
+                                                                "Accept": "application/json"}) as c:
+        r = c.get(url)
+        if r.status_code != 200:
+            raise DataError(f"Nasdaq earnings forecast returned {r.status_code}")
+        data = (r.json() or {}).get("data") or {}
+    rows = ((data.get("yearlyForecast") or {}).get("rows")) or []
+    eps = [_num(x.get("consensusEPSForecast")) for x in rows]
+    n = [_num(x.get("noOfEstimates")) for x in rows]
+    est = Estimates(source="nasdaq (unofficial)", raw={"rows": rows[:2]})
+    if eps:
+        est.eps_fy1 = eps[0]
+        est.n_analysts = int(n[0]) if n and n[0] else None
+    if len(eps) > 1:
+        est.eps_fy2 = eps[1]
+    return est
