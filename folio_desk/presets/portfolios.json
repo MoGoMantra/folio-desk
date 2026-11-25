@@ -1,0 +1,10 @@
+{
+ "_note": "Example model portfolios. Weights are % of the whole portfolio; accounts: T = taxable, I = traditional IRA/401k, R = Roth. Educational starting points, not recommendations.",
+ "Balanced 60/40": [["VTI", "T", 25], ["VXUS", "T", 15], ["BND", "I", 30], ["VTI", "I", 20], ["SCHP", "I", 5], ["GLDM", "I", 5]],
+ "Growth 80/20": [["VTI", "T", 35], ["VXUS", "T", 20], ["VTI", "I", 25], ["BND", "I", 12], ["GLDM", "I", 8]],
+ "All-weather 40/60": [["VTI", "T", 16], ["VXUS", "T", 12], ["VGSH", "T", 5], ["VTI", "I", 12], ["VGIT", "I", 20], ["GLDM", "I", 15], ["VGLT", "I", 10], ["SCHP", "I", 10]],
+ "Stacked 90/60 + gold": [["NTSX", "T", 45], ["NTSX", "I", 45], ["GLDM", "I", 10]],
+ "Barbell: T-bills + Nasdaq-100": [["SGOV", "T", 45], ["SGOV", "I", 45], ["QQQ", "I", 10]],
+ "100% US total market": [["VTI", "T", 50], ["VTI", "I", 50]],
+ "Three-fund": [["VTI", "T", 40], ["VXUS", "T", 20], ["BND", "I", 40]]
+}

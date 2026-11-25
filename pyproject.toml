@@ -1,0 +1,53 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "folio-desk"
+version = "0.1.0"
+description = "An open-source research and portfolio desk for individual investors: market signals, equity and sector research, a trading register, portfolio construction, performance, optimization and risk checks."
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.11"
+authors = [{ name = "folio-desk contributors" }]
+keywords = ["investing", "portfolio", "equity research", "options", "sec edgar", "backtesting"]
+classifiers = [
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3",
+  "Intended Audience :: Financial and Insurance Industry",
+  "Topic :: Office/Business :: Financial :: Investment",
+]
+dependencies = [
+  "fastapi>=0.110",
+  "uvicorn>=0.27",
+  "sqlalchemy>=2.0",
+  "pydantic>=2.5",
+  "numpy>=1.26",
+  "pandas>=2.1",
+  "scipy>=1.11",
+  "apscheduler>=3.10,<4",
+  "httpx>=0.27",
+  "yfinance>=0.2.40",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "ruff>=0.4"]
+
+[project.scripts]
+folio-desk = "folio_desk.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["folio_desk*"]
+
+[tool.setuptools.package-data]
+folio_desk = ["static/**/*", "presets/*.json"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 120
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "B"]
+ignore = ["E501", "E702", "E731", "E741", "B023", "B905"]

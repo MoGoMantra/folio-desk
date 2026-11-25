@@ -1,0 +1,39 @@
+# folio-desk configuration. Copy to folio-desk.toml (git-ignored) and edit.
+# Every value can also be set with an environment variable: FOLIO_<SECTION>_<KEY>,
+# e.g. FOLIO_SEC_USER_AGENT or FOLIO_DATA_POLYGON_API_KEY.
+
+[sec]
+# Required by SEC EDGAR fair-access rules: your own name and email.
+# The EDGAR tools refuse to run until this is set.
+user_agent = ""            # e.g. "Jane Investor jane@example.com"
+
+[data]
+# Where prices come from. "yahoo" uses the yfinance library (free).
+# Paid providers are used when their key is set and they are listed here first.
+price_providers = ["yahoo"]          # e.g. ["polygon", "yahoo"]
+polygon_api_key = ""
+fmp_api_key = ""
+tiingo_api_key = ""
+# Opt-in: Nasdaq's public website endpoints (screener universe, consensus EPS,
+# option chains). Unofficial and undocumented: they can change or block you.
+allow_unofficial = false
+
+[storage]
+db_path = "~/.folio-desk/folio.db"
+
+[watchlist]
+# Names the market-signals page tracks for trend and drawdown.
+symbols = ["AAPL", "MSFT", "JNJ", "XOM", "JPM"]
+
+[theme]
+# An optional thematic basket for the leadership layer (median drawdown from the 52-week high).
+name = "AI leaders"
+symbols = ["NVDA", "AVGO", "AMD", "TSM", "MSFT", "META"]
+# An optional single-name bellwether for theme credit stress (leave blank to skip).
+bellwether = ""
+
+[schedule]
+enabled = false
+timezone = "America/New_York"
+signals_at = "17:15"       # weekdays, after the close
+prices_at = "18:15"
